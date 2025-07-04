@@ -54,7 +54,7 @@
   <script type="text/babel">
     const { useState } = React;
 
-    /* Sample 2‑colour deck (expand later) */
+    /* Sample 2‑colour deck */
     const SAMPLE_DECK = [
       { name:"Handball",color:"red",value:1 },
       { name:"Kick",color:"red",value:1 },
@@ -71,7 +71,7 @@
     /* Card component */
     function Card({ card, onClick }) {
       return (
-        <div className={\`card \${card.color}\`} onClick={onClick}>
+        <div className={\`card ${card.color}\`} onClick={onClick}>
           <div className="card-title">{card.name}</div>
           <div className="card-value">+{card.value}</div>
         </div>
@@ -82,7 +82,7 @@
     function Player({ player, isCurrent }) {
       const momentum = player.chain.reduce((s,c)=>s+c.value,0);
       return (
-        <div className={\`player-zone \${isCurrent?'highlight':''}\`}>
+        <div className={\`player-zone ${isCurrent ? "highlight" : ""}\`}>
           <strong>{player.name}</strong><br/>
           Score {player.score} • Mom {momentum}
           <div className="chain-row">
@@ -102,19 +102,17 @@
       ]);
       const [turn,setTurn]=useState(0);
       const [actions,setActions]=useState(3);
-      const current=players[turn];
 
       const playCard=index=>{
         if(actions===0||turn!==0) return;
         const arr=[...players];
         const card=arr[0].hand.splice(index,1)[0];
         arr[0].chain.push(card);
-        // scoring demo
         const momentum=arr[0].chain.reduce((s,c)=>s+c.value,0);
         if(momentum>=10 && ["Kick","Torp","Banana"].includes(card.name)){
           const goal=Math.random()<0.33;
           arr[0].score+=goal?6:1;
-          arr[0].chain=goal?[]:arr[0].chain.slice(-2); // keep last few for demo
+          arr[0].chain=goal?[]:arr[0].chain.slice(-2);
         }
         setPlayers(arr);
         setActions(actions-1);
@@ -124,6 +122,8 @@
         setTurn((turn+1)%players.length);
         setActions(3);
       };
+
+      const current=players[turn];
 
       return (
         <div className="game-container">
@@ -137,7 +137,7 @@
             </div>
           </div>
           <button className="end-btn" onClick={endTurn}>
-            {turn===0?`End Turn (${actions} left)`:`Next`}
+            {turn===0 ? \`End Turn (\${actions} left)\` : "Next"}
           </button>
         </div>
       );
@@ -156,7 +156,7 @@
 
     function App(){
       const [started,setStarted]=useState(false);
-      return started?<GameBoard/>:<StartScreen onStart={()=>setStarted(true)}/>;
+      return started ? <GameBoard/> : <StartScreen onStart={()=>setStarted(true)} />;
     }
 
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
