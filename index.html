@@ -2,12 +2,99 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Momentum - Aussie Rules Card Game</title>
-  <script type="module" src="momentum.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Momentum</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 text-gray-900">
-  <div id="root" class="max-w-4xl mx-auto mt-10"></div>
+  <div id="root" class="max-w-4xl mx-auto p-4"></div>
+
+  <!-- React & React-DOM (UMD builds) -->
+  <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+
+  <!-- Your game logic -->
+  <script>
+    const { useState } = React;
+
+    /* ---------- CONSTANTS ---------- */
+    const COLOURS = ["Red", "Blue"];
+    const VALUES = { Handball:1, Bounce:1, Kick:1, "Kick & Mark":1, Mark:0, Torp:3, Banana:3 };
+    const MOMENTUM = ["Handball","Bounce","Kick","Kick & Mark","Mark","Torp","Banana"];
+    const DEFENCE  = ["Tackle","Smother","Tackle — HTB","Intercept Mark"];
+
+    const PER_COLOUR = {Handball:8,Bounce:8, Kick:8,"Kick & Mark":5, Mark:5, Torp:4, Banana:4,
+                        Tackle:3, Smother:3, "Tackle — HTB":3,"Intercept Mark":4};
+
+    /* ---------- HELPERS ---------- */
+    const shuffle = (a)=>a.sort(()=>Math.random()-0.5);
+    const buildDeck = () => {
+      const d=[];
+      for(const col of COLOURS){
+        Object.entries(PER_COLOUR).forEach(([n,c])=>{
+          for(let i=0;i<c;i++) d.push({name:n,colour:col,type: MOMENTUM.includes(n)?"mom":"def"});
+        });
+      }
+      d.push({name:"High Tackle",type:"ump"}); d.push({name:"Not 15",type:"ump"});
+      d.push({name:"50 Metres",type:"ump"});   d.push({name:"Score Review",type:"ump"});
+      d.push({name:"Siren",type:"wild"});
+      return shuffle(d);
+    };
+
+    /* ---------- MAIN COMPONENT ---------- */
+    function MomentumGame(){
+      const [deck,setDeck]=useState(buildDeck());
+      const [hand,setHand] = useState([]);
+      const [chain,setChain]=useState([]);
+      const [momentum,setMomentum]=useState(0);
+      const [actions,setActions]=useState(3);
+      const [colourLock,setColourLock]=useState(null);
+
+      /* draw up to 7 cards */
+      React.useEffect(()=>{ if(hand.length<7 && deck.length){
+          setHand([...hand, deck.pop()]); setDeck([...deck]);
+      }},[hand,deck]);
+
+      const playCard=(card,i)=>{
+        if(actions===0) return;
+        if(colourLock && card.colour!==colourLock) return;
+        const newHand=[...hand]; newHand.splice(i,1); setHand(newHand);
+        setChain([...chain,card]); setMomentum(m=>m+VALUES[card.name]); setActions(a=>a-1);
+        if(!colourLock) setColourLock(card.colour);
+      }
+
+      const endTurn=()=>{
+        setActions(3); setColourLock(null);
+      }
+
+      return (
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Momentum – Demo</h1>
+          <p className="mb-2">Momentum: {momentum} &bull; Actions: {actions}</p>
+
+          <h2 className="font-semibold">Hand</h2>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {hand.map((c,i)=>(<div key={i}
+              className={"border-2 cursor-pointer px-2 py-1 text-xs "+(c.colour==="Red"?"border-red-600":"border-blue-600")}
+              onClick={()=>playCard(c,i)}>
+              {c.name}
+            </div>))}
+          </div>
+
+          <h2 className="font-semibold">Chain</h2>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {chain.map((c,i)=>(<div key={i}
+              className={"border-2 px-2 py-1 text-xs "+(c.colour==="Red"?"border-red-600":"border-blue-600")}>
+              {c.name}
+            </div>))}
+          </div>
+
+          <button className="bg-blue-600 text-white px-4 py-2 rounded" onClick={endTurn}>End Turn</button>
+        </div>
+      );
+    }
+
+    ReactDOM.render(<MomentumGame />, document.getElementById('root'));
+  </script>
 </body>
 </html>
