@@ -1,36 +1,39 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="UTF-8" />
-  <title>Momentum – The Aussie Rules Card Game</title>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Momentum – The Aussie Rules Card Game</title>
 
-  <!-- React, React-DOM, Babel (for in-browser JSX) -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <!-- React / React-DOM / Babel -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 
-  <style>
-    body { margin:0; font-family:sans-serif; background:#f9f6ee; }
-  </style>
-</head>
-<body>
-  <div id="root"></div>
+    <style>
+      body { margin:0; font-family:sans-serif; background:#f9f6ee; }
+      button { cursor:pointer; }
+    </style>
+  </head>
 
-  <!-- ==== APP CODE ==== -->
-  <script type="text/babel">
+  <body>
+    <div id="root"></div>
 
-    const { useState, useRef } = React;
+    <!-- ===== APP CODE ===== -->
+    <script type="text/babel">
+      const { useState, useRef } = React;
 
-    function App() {
-      const [showStart, setShowStart] = useState(true);
-      const audio = useRef(null);
+      function StartScreen({ onStart }) {
+        const audio = useRef(null);
 
-      if (showStart) {
         return (
           <div
             style={{
-              height: '100vh', display: 'flex', flexDirection: 'column',
-              justifyContent: 'center', alignItems: 'center', background: '#f9f6ee'
+              height: '100vh',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              background: '#f9f6ee'
             }}
             onClick={() => { if (audio.current) audio.current.play(); }}
           >
@@ -41,44 +44,64 @@
               />
             </audio>
 
-            <h1 style="
-              font-size: 3rem;
-              font-family: Impact, sans-serif;
-              color: #b41d24;
-              text-shadow: 2px 2px 0 #043b6c;">
+            <h1
+              style={{
+                fontSize: '3rem',
+                fontFamily: 'Impact, sans-serif',
+                color: '#b41d24',
+                textShadow: '2px 2px 0 #043b6c',
+                margin: 0
+              }}
+            >
               MOMENTUM
             </h1>
 
-            <p style="letter-spacing:2px;color:#043b6c;margin-top:-10px">
+            <p
+              style={{
+                marginTop: -10,
+                letterSpacing: 2,
+                color: '#043b6c'
+              }}
+            >
               The Aussie Rules Card Game
             </p>
 
             <button
-              onClick={() => { audio.current.pause(); setShowStart(false); }}
-              style="
-                margin-top: 24px;
-                padding: 10px 26px;
-                font-size: 1.1rem;
-                font-weight: 600;
-                color: #fff;
-                background: linear-gradient(90deg,#b41d24 0%,#b41d24 50%,#043b6c 50%,#043b6c 100%);
-                border: none; border-radius: 8px; cursor: pointer;">
-              Play Game
+              onClick={() => { audio.current.pause(); onStart(); }}
+              style={{
+                marginTop: 24,
+                padding: '10px 26px',
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                color: '#fff',
+                background:
+                  'linear-gradient(90deg,#b41d24 0%,#b41d24 50%,#043b6c 50%,#043b6c 100%)',
+                border: 'none',
+                borderRadius: 8,
+                boxShadow: '0 4px 6px rgba(0,0,0,.2)'
+              }}
+            >
+              Play&nbsp;Game
             </button>
           </div>
         );
       }
 
-      /* --- Placeholder for the full game UI --- */
-      return (
-        <div style={{ padding: 20 }}>
-          <h2>Game Screen Placeholder</h2>
-          <p>React is now rendering correctly. You can extend the full game here.</p>
-        </div>
-      );
-    }
+      function PlaceholderGame() {
+        return (
+          <div style={{ padding: 20 }}>
+            <h2>Game Screen Placeholder</h2>
+            <p>React is now rendering. You can extend the full game here.</p>
+          </div>
+        );
+      }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
-</body>
+      function App() {
+        const [started, setStarted] = useState(false);
+        return started ? <PlaceholderGame /> : <StartScreen onStart={() => setStarted(true)} />;
+      }
+
+      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+  </body>
 </html>
