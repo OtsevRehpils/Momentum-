@@ -3,20 +3,23 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Momentum – Full Deck</title>
+<title>Momentum – AFL Card Game (Full Deck)</title>
+
+<!-- React + Babel -->
 <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
 <style>
 body{margin:0;font-family:sans-serif;background:#222;color:#fff;text-align:center}
-.card{display:inline-block;width:85px;height:120px;border-radius:8px;
-      margin:4px;padding:6px;border:2px solid #ccc;cursor:pointer}
+.card{display:inline-block;width:85px;height:120px;border-radius:8px;margin:4px;
+      padding:6px;border:2px solid #ccc;cursor:pointer}
 .red{background:#8a1b1b}.blue{background:#0d2a86}.ump{background:#555}.wild{background:#333}
 .card-title{font-size:14px;font-weight:700}.card-val{font-size:20px;margin-top:6px}
 .board{display:flex;flex-direction:column;height:100vh}
 .hand-bar{background:#111;border-top:2px solid #444;padding:6px}
 .hand{display:flex;justify-content:center;flex-wrap:wrap}
-.zone{flex:1;margin:4px;border:2px solid #555;border-radius:10px;padding:6px;text-align:center;background:#333}
+.zone{flex:1;margin:4px;border:2px solid #555;border-radius:10px;padding:6px;background:#333}
 .highlight{border-color:#ffcc00;box-shadow:0 0 8px #ffcc00}
 .chain{display:flex;justify-content:center;flex-wrap:wrap;margin-top:4px}
 .btn{padding:12px 24px;margin:8px auto;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:#ffcc00;color:#000}
@@ -24,11 +27,13 @@ body{margin:0;font-family:sans-serif;background:#222;color:#fff;text-align:cente
 .start button{padding:14px 32px;font-size:20px;font-weight:700;border:none;border-radius:10px;color:#002b5c;cursor:pointer;margin-top:24px}
 </style>
 </head>
-<body><div id="root"></div>
+<body>
+<div id="root"></div>
+
 <script type="text/babel">
 const {useState,useEffect}=React;
 
-/* ---------- Build full 121-card deck ---------- */
+/* ---------- Build full deck ---------- */
 const COLORS=["red","blue"];
 const MOM_COUNTS={Handball:8,Bounce:8,Kick:8,"Kick & Mark":5,Mark:5,Torp:4,Banana:4};
 const DEF_COUNTS={Tackle:4,Smother:4,"Tackle HTB":2,"Intercept Mark":4};
@@ -48,21 +53,25 @@ function buildDeck(){
 }
 const scoreDeck=()=>shuffle([...Array(7).fill("Goal"),...Array(13).fill("Behind")]);
 
-/* ---------- Card component ---------- */
+/* ---------- Components ---------- */
 const Card=({c,onClick})=>(
   <div className={`card ${c.color}`} onClick={onClick}>
     <div className="card-title">{c.name}</div>
     {c.value!=null&&<div className="card-val">+{c.value}</div>}
-  </div>);
+  </div>
+);
 
-/* ---------- Player zone ---------- */
-function Zone({p,cur}){const mom=p.chain.reduce((s,c)=>s+(c.value||0),0);
-return(<div className={`zone ${cur?"highlight":""}`}>
-  <strong>{p.name}</strong><br/>Score {p.score} • Mom {mom}
-  <div className="chain">{p.chain.map((c,i)=><Card key={i} c={c}/>)}</div>
-</div>);}
+function Zone({p,current}){
+  const mom=p.chain.reduce((s,c)=>s+(c.value||0),0);
+  return(
+    <div className={`zone ${current?"highlight":""}`}>
+      <strong>{p.name}</strong><br/>Score {p.score} • Mom {mom}
+      <div className="chain">{p.chain.map((c,i)=><Card key={i} c={c}/>)}</div>
+    </div>
+  );
+}
 
-/* ---------- Board ---------- */
+/* ---------- Game Board ---------- */
 function Board({onWin}){
   const [deck,setDeck]=useState(buildDeck());
   const [scores,setScores]=useState(scoreDeck());
@@ -71,68 +80,104 @@ function Board({onWin}){
   const [actions,setActions]=useState(3);
   const [colourLock,setColour]=useState(null);
 
-  /* deal to 7 */
-  useEffect(()=>{if(players[0].hand.length===0){const arr=[...players];arr.forEach(p=>{while(p.hand.length<7)draw(p);});setPlayers(arr);}},[]);
+  /* Initial deal */
+  useEffect(()=>{if(players[0].hand.length===0){
+    const arr=[...players];arr.forEach(p=>{while(p.hand.length<7)draw(p);});setPlayers(arr);
+  }},[]);
   const draw=p=>{if(deck.length){const [c,...r]=deck;p.hand.push(c);setDeck(r);}};
 
-  /* play momentum */
+  /* Play momentum */
   const play=(i)=>{
     if(turn!==0||actions===0)return;
-    const p=[...players];const card=p[0].hand[i];
-    if(card.type!=="mom")return;if(colourLock&&card.color!==colourLock)return;
-    p[0].hand.splice(i,1);p[0].chain.push(card);setPlayers(p);setActions(actions-1);setColour(colourLock||card.color);
-    // scoring
-    const mom=p[0].chain.reduce((s,c)=>s+(c.value||0),0);
-    if(mom>=10&&["Kick","Torp","Banana"].includes(card.name)){
-      const [sc,...rest]=scores;setScores(rest);p[0].score+=(sc==="Goal"?6:1);
-      if(p[0].score>=30)return onWin(p[0].name);
-      p[0].chain=sc==="Goal"?[]:p[0].chain.slice(-2);
+    const arr=[...players];
+    const card=arr[0].hand[i];
+    if(card.type!=="mom")return;
+    if(colourLock&&card.color!==colourLock)return;
+
+    arr[0].hand.splice(i,1);
+    arr[0].chain.push(card);
+    setPlayers(arr);
+    setActions(a=>a-1);
+    setColour(colourLock||card.color);
+
+    const mom=arr[0].chain.reduce((s,c)=>s+(c.value||0),0);
+    if(mom>=10 && ["Kick","Torp","Banana"].includes(card.name)){
+      const [sc,...rest]=scores;setScores(rest);
+      arr[0].score += sc==="Goal"?6:1;
+      arr[0].chain = sc==="Goal"?[]:arr[0].chain.slice(-2);
+      if(arr[0].score>=30)onWin(arr[0].name);
     }
-    while(p[0].hand.length<7)draw(p[0]);
-    setPlayers(p);
+    while(arr[0].hand.length<7)draw(arr[0]);
   };
 
-  /* AI */
-  useEffect(()=>{if(turn===0)return;const p=[...players];const ai=p[turn];const human=p[0];
-    const last=human.chain.at(-1);
+  /* AI logic */
+  useEffect(()=>{
+    if(turn===0)return;
+    const arr=[...players];const ai=arr[turn];const human=arr[0];const last=human.chain.at(-1);
+    // try defence
     const defI=ai.hand.findIndex(c=>c.type==="def"&&(
       (c.name==="Tackle"&&last&&["Handball","Bounce"].includes(last.name))||
       (c.name==="Smother"&&last&&["Handball","Kick"].includes(last.name))||
       (c.name==="Tackle HTB"&&human.chain.length)||
       (c.name==="Intercept Mark"&&last&&last.name==="Kick")));
-    if(defI!==-1){playDef(ai,defI);return;}
-    const momI=ai.hand.findIndex(c=>c.type==="mom");if(momI!==-1){ai.chain.push(ai.hand.splice(momI,1)[0]);}
-    while(ai.hand.length<7)draw(ai);setPlayers(p);setTimeout(endTurn,700);
+    if(defI!==-1){applyDefence(arr,turn,defI);return;}
+
+    // otherwise play first momentum
+    const momI=ai.hand.findIndex(c=>c.type==="mom");
+    if(momI!==-1){ai.chain.push(ai.hand.splice(momI,1)[0]);}
+    while(ai.hand.length<7)draw(ai);
+    setPlayers(arr);
+    setTimeout(endTurn,700);
   },[turn]);
 
-  const playDef=(ai,idx)=>{
-    const p=[...players];const def=p[turn].hand[idx];const h=p[0].chain;const last=h.at(-1);
-    if(def.name==="Tackle"&&last&&["Handball","Bounce"].includes(last.name))h.pop();
-    else if(def.name==="Smother"&&last&&["Handball","Kick"].includes(last.name))h.pop();
-    else if(def.name==="Tackle HTB")p[0].chain=[];
-    else if(def.name==="Intercept Mark"&&last&&last.name==="Kick"){p[turn].chain.push(last);h.pop();}
-    p[turn].hand.splice(idx,1);setPlayers(p);setTimeout(endTurn,500);
+  const applyDefence=(arr,aiIdx,defI)=>{
+    const card=arr[aiIdx].hand[defI];
+    const chain=arr[0].chain;const last=chain.at(-1);
+    if(card.name==="Tackle"&&last&&["Handball","Bounce"].includes(last.name))chain.pop();
+    else if(card.name==="Smother"&&last&&["Handball","Kick"].includes(last.name))chain.pop();
+    else if(card.name==="Tackle HTB"){arr[0].chain=[];}
+    else if(card.name==="Intercept Mark"&&last&&last.name==="Kick"){
+      arr[aiIdx].chain.push(last);chain.pop();
+    }
+    arr[aiIdx].hand.splice(defI,1);
+    setPlayers(arr);
+    setTimeout(endTurn,500);
   };
 
-  const endTurn=()=>{setTurn((turn+1)%4);setActions(3);setColour(null);};
+  const endTurn=()=>{setTurn(t=>(t+1)%4);setActions(3);setColour(null);};
 
-  return(<div className="board">
-    <h3>Turn: {players[turn].name}</h3>
-    <div style={{display:"flex",justifyContent:"space-around"}}>{players.slice(1).map(pl=><Zone key={pl.id} p={pl} cur={pl.id===turn}/>)}</div>
-    <Zone p={players[0]} cur={turn===0}/>
-    <div className="hand-bar"><div className="hand">
-      {players[0].hand.map((c,i)=><Card key={i} c={c} onClick={()=>play(i)}/>)}
-    </div></div>
-    {turn===0&&<button className="btn" onClick={endTurn}>End Turn ({actions})</button>}
-  </div>);
+  return(
+    <div className="board">
+      <h3>Turn: {players[turn].name}</h3>
+      <div style={{display:"flex",justifyContent:"space-around"}}>
+        {players.slice(1).map(p=><Zone key={p.id} p={p} current={p.id===turn}/>)}
+      </div>
+      <Zone p={players[0]} current={turn===0}/>
+      <div className="hand-bar"><div className="hand">
+        {players[0].hand.map((c,i)=><Card key={i} c={c} onClick={()=>play(i)}/>)}
+      </div></div>
+      {turn===0&&<button className="btn" onClick={endTurn}>End Turn ({actions})</button>}
+    </div>
+  );
 }
 
 /* ---------- App ---------- */
-function App(){const[play,setPlay]=useState(false);const[winner,setWinner]=useState(\"-\");
-return play?<Board onWin={n=>{setWinner(n);setPlay(false);}}/>:
-(<div className=\"start\"><h1>MOMENTUM</h1><p>The Aussie Rules Card Game</p>
- {winner!=\"-\"&&<h2>{winner} wins!</h2>}<button onClick={()=>setPlay(true)}>Play Game</button></div>);
+function App(){
+  const [inGame,setInGame]=useState(false);
+  const [winner,setWinner]=useState("-");
+  return inGame?(
+    <Board onWin={n=>{setWinner(n);setInGame(false);}}/>
+  ):(
+    <div className="start">
+      <h1>MOMENTUM</h1>
+      <p>The Aussie Rules Card Game</p>
+      {winner!=="-" && <h2>{winner} wins!</h2>}
+      <button onClick={()=>setInGame(true)}>Play Game</button>
+    </div>
+  );
 }
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
-</body></html>
+</body>
+</html>
