@@ -30,8 +30,8 @@
   </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
+  <div id="root"></div>
+  <script type="text/babel">
 const { useState, useEffect } = React;
 const shuffle = a => [...a].sort(() => Math.random() - 0.5);
 const last = a => a.length ? a[a.length - 1] : null;
@@ -68,7 +68,7 @@ function Zone({p, current}){
   );
 }
 
-function App(){
+    function App(){
   const [play,setPlay]=useState(false);
   const [winner,setWinner]=useState("-");
 
@@ -203,6 +203,8 @@ function App(){
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script>
+  </script>
 </body>
 </html>
+
+    
