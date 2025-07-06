@@ -35,7 +35,6 @@
     const { useState, useEffect } = React;
     const shuffle = a => [...a].sort(() => Math.random() - 0.5);
     const last = a => a.length ? a[a.length - 1] : null;
-
     const COLORS = ["red", "blue"];
     const MOM = { Handball:8, Bounce:8, Kick:8, "Kick & Mark":5, Mark:5, Torp:4, Banana:4 };
     const DEF = { Tackle:4, Smother:4, "Tackle HTB":2, "Intercept Mark":4 };
@@ -52,13 +51,22 @@
       d.push({name:"Siren", color:"wild", type:"wild"});
       return shuffle(d);
     }
-
-    const buildScore = () => shuffle([..."GGGGGGG", ..."BBBBBBBBBBBBB"]);
+    const buildScore = () => shuffle([...("G".repeat(7)), ...("B".repeat(13))]);
 
     const Card = ({c, onClick, back}) => {
       if (back) return <div className="card back"><span>Deck</span></div>;
       return <div className={"card "+c.color} onClick={onClick}><div className="card-title">{c.name}</div>{c.value != null && <div className="card-val">+{c.value}</div>}</div>;
     };
+
+    function Zone({p, current}){
+      const mom = p.chain.reduce((s,c)=>s+(c.value||0),0);
+      return (
+        <div className={"zone "+(current?"highlight":"")}>
+          <strong>{p.name}</strong><br/>Score {p.score} • Mom {mom}
+          <div className="chain">{p.chain.map((c,i)=><Card key={i} c={c}/>)}</div>
+        </div>
+      );
+    }
 
     function App(){
       const [play,setPlay]=useState(false);
@@ -71,9 +79,7 @@
         const [turn,setTurn]=useState(0);
         const [actions,setActions]=useState(3);
         const [log,setLog]=useState([]);
-
         const draw = (pl,n=1)=>{ let d=[...deck]; for(let i=0;i<n&&d.length;i++){pl.hand.push(d.shift());} setDeck(d); };
-        const last = a => a.length ? a[a.length - 1] : null;
         const protectedChain = ch => last(ch) && last(ch).name === "Mark";
         const addLog = msg => setLog(prev => [msg, ...prev.slice(0, 9)]);
 
@@ -107,25 +113,12 @@
           const card = state[src].hand[idx];
           const ch = state[dst].chain;
           const top = last(ch);
-
-          if (card.name === "Not 15") {
-            const tgt = parseInt(prompt("Remove Mark from which player? (0–3)"));
-            if (isNaN(tgt) || tgt < 0 || tgt > 3) return false;
-            const ch = state[tgt].chain, top = last(ch);
-            if (top && (top.name === "Mark" || top.name === "Kick & Mark")) {
-              ch.pop(); state[src].hand.splice(idx,1); return true;
-            }
-            return false;
-          }
-
           if (!top || card.color !== top.color) return false;
-
           let ok = false;
           if (card.name === "Tackle" && ["Handball", "Bounce"].includes(top.name)) { ch.pop(); ok = true; }
           else if (card.name === "Smother" && ["Handball", "Kick"].includes(top.name)) { ch.pop(); ok = true; }
           else if (card.name === "Tackle HTB" && ch.length) { state[dst].chain = []; ok = true; }
           else if (card.name === "Intercept Mark" && top.name === "Kick") { state[src].chain.push(top); ch.pop(); ok = true; }
-
           if (ok) state[src].hand.splice(idx,1);
           return ok;
         }
@@ -160,7 +153,6 @@
           const ai = arr[turn];
           const human = arr[0];
           const ht = last(human.chain);
-
           const dIdx = ai.hand.findIndex(c => c.type === "def" && !protectedChain(human.chain) && ht &&
             c.color === ht.color && (
               (c.name === "Tackle" && ["Handball", "Bounce"].includes(ht.name)) ||
@@ -175,43 +167,4 @@
             setTimeout(() => setTurn((turn+1)%4), 500);
             return;
           }
-
-          const validMom = ai.hand.filter(c => c.type === "mom").sort((a, b) => (b.value || 0) - (a.value || 0));
-          if (validMom.length > 0) {
-            const best = validMom[0];
-            const idx = ai.hand.findIndex(c => c === best);
-            ai.chain.push(ai.hand.splice(idx,1)[0]);
-            addLog(`${ai.name} played ${best.name}`);
-            scoreCheck(ai);
-          }
-          setPlayers(arr);
-          setTimeout(() => setTurn((turn+1)%4), 500);
-        }, [turn]);
-
-        return (
-          <div className="board">
-            <div className="deck-area"><Card back/><div style={{fontSize:14,marginTop:2}}>Deck {deck.length}</div></div>
-            <h3>Turn: {players[turn].name}</h3>
-            <div style={{display:"flex",justifyContent:"space-around"}}>{players.slice(1).map(p=><Zone key={p.id} p={p} current={turn===p.id}/>)}</div>
-            <Zone p={players[0]} current={turn===0}/>
-            <div className="hand-bar"><div className="hand">{players[0].hand.map((c,i)=><Card key={i} c={c} onClick={()=>playCard(i)}/>)}</div></div>
-            {turn===0 && <button className="btn" onClick={()=>setTurn((turn+1)%4)}>End Turn ({actions})</button>}
-            <div className="log-box">{log.map((l,i)=><div key={i}>{l}</div>)}</div>
-          </div>
-        );
-      };
-
-      return play
-        ? <Board onWin={name=>{setWinner(name);setPlay(false);}}/>
-        : <div className="start">
-            <img src="splash_card.png" alt="splash" className="splash-card"/>
-            <h1>MOMENTUM</h1><p>The Aussie Rules Card Game</p>
-            {winner!=="-" && <h2 style={{marginTop:8}}>{winner} wins!</h2>}
-            <button onClick={()=>setPlay(true)}>Play Game</button>
-          </div>;
-    }
-
-    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-  </script>
-</body>
-</html>
+          const validMom = ai.hand.filter(c => c.type === "mom").sort((a
