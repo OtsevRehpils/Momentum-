@@ -26,7 +26,6 @@
     .start h1{color:#8a1b1b}.splash-card{width:240px;max-width:80%;box-shadow:0 0 10px rgba(0,0,0,.25);border-radius:6px;margin-bottom:20px}
     .start button{background:#8a1b1b;color:#f9f0ee;padding:14px 32px;font-size:20px;font-weight:700;border:none;border-radius:10px;cursor:pointer}
     .start button:hover{opacity:.85}
-    .log-box{background:#111;color:#ccc;padding:8px;margin:4px auto;max-width:90%;height:80px;overflow:auto;font-size:13px;text-align:left;border:1px solid #444;border-radius:6px}
   </style>
 </head>
 <body>
@@ -35,6 +34,7 @@
 const { useState, useEffect } = React;
 const shuffle = a => [...a].sort(() => Math.random() - 0.5);
 const last = a => a.length ? a[a.length - 1] : null;
+
 const COLORS = ["red", "blue"];
 const MOM = { Handball:8, Bounce:8, Kick:8, "Kick & Mark":5, Mark:5, Torp:4, Banana:4 };
 const DEF = { Tackle:4, Smother:4, "Tackle HTB":2, "Intercept Mark":4 };
@@ -68,29 +68,15 @@ const Zone = ({p, current}) => {
   );
 };
 
-function App(){
-  const [play,setPlay]=useState(false);
-  const [winner,setWinner]=useState("-");
-  return play
-    ? <Board onWin={name=>{setWinner(name);setPlay(false);}}/>
-    : <div className="start">
-        <img src="splash_card.png" alt="splash" className="splash-card"/>
-        <h1>MOMENTUM</h1><p>The Aussie Rules Card Game</p>
-        {winner!=="-" && <h2 style={{marginTop:8}}>{winner} wins!</h2>}
-        <button onClick={()=>setPlay(true)}>Play Game</button>
-      </div>;
-}
-
 function Board({onWin}) {
   const [deck,setDeck]=useState(buildDeck());
   const [scores,setScores]=useState(buildScore());
-  const [players,setPlayers]=useState(Array.from({length:4},(_,i)=>({id:i,name:i?`Bot ${i}`:"You",hand:[],chain:[],score:0,total:0})));
+  const [players,setPlayers]=useState(Array.from({length:4},(_,i)=>({id:i,name:i?`Bot ${i}`:"You",hand:[],chain:[],score:0})));
   const [turn,setTurn]=useState(0);
   const [actions,setActions]=useState(3);
-  const [log,setLog]=useState([]);
+
   const draw = (pl,n=1)=>{ let d=[...deck]; for(let i=0;i<n&&d.length;i++){pl.hand.push(d.shift());} setDeck(d); };
   const protectedChain = ch => last(ch) && last(ch).name === "Mark";
-  const addLog = msg => setLog(prev => [msg, ...prev.slice(0, 9)]);
 
   useEffect(() => {
     if (players[0].hand.length === 0) {
@@ -113,8 +99,7 @@ function Board({onWin}) {
       const sc = scores[0]; setScores(scores.slice(1));
       pl.score += sc === "G" ? 6 : 1;
       pl.chain = sc === "G" ? [] : pl.chain.slice(-2);
-      addLog(`${pl.name} scores a ${sc === "G" ? "GOAL" : "behind"}`);
-      if (pl.score + pl.total >= 30) onWin(pl.name);
+      if (pl.score >= 30) onWin(pl.name);
     }
   }
 
@@ -143,7 +128,6 @@ function Board({onWin}) {
     if (card.type === "mom") {
       arr[0].hand.splice(i,1); arr[0].chain.push(card);
       setActions(a=>a-1); scoreCheck(arr[0]); setPlayers(arr);
-      addLog(`You played ${card.name}`);
     } else {
       const tgt = parseInt(prompt("Target player (0–3):"));
       if (isNaN(tgt) || tgt < 0 || tgt > 3) return;
@@ -181,7 +165,6 @@ function Board({onWin}) {
       const best = validMom[0];
       const idx = ai.hand.findIndex(c => c === best);
       ai.chain.push(ai.hand.splice(idx,1)[0]);
-      addLog(`${ai.name} played ${best.name}`);
       scoreCheck(ai);
     }
     setPlayers(arr);
@@ -196,12 +179,24 @@ function Board({onWin}) {
       <Zone p={players[0]} current={turn===0}/>
       <div className="hand-bar"><div className="hand">{players[0].hand.map((c,i)=><Card key={i} c={c} onClick={()=>playCard(i)}/>)}</div></div>
       {turn===0 && <button className="btn" onClick={()=>setTurn((turn+1)%4)}>End Turn ({actions})</button>}
-      <div className="log-box">{log.map((l,i)=><div key={i}>{l}</div>)}</div>
     </div>
   );
 }
 
+function App(){
+  const [play,setPlay]=useState(false);
+  const [winner,setWinner]=useState("-");
+  return play
+    ? <Board onWin={name=>{setWinner(name);setPlay(false);}}/>
+    : <div className="start">
+        <img src="splash_card.png" alt="splash" className="splash-card"/>
+        <h1>MOMENTUM</h1><p>The Aussie Rules Card Game</p>
+        {winner!=="-" && <h2 style={{marginTop:8}}>{winner} wins!</h2>}
+        <button onClick={()=>setPlay(true)}>Play Game</button>
+      </div>;
+}
+
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-  </script>
+</script>
 </body>
 </html>
