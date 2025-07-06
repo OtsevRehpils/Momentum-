@@ -1,210 +1,228 @@
+<!-- Full HTML + React/Babel Game Code with Smart Bot Logic -->
+<!-- See Canvas: Momentum Afl Engine -->
+<!-- BEGIN -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Momentum – AFL Card Game</title>
-<!-- React + Babel -->
-<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-<style>
-body{margin:0;font-family:sans-serif;background:#222;color:#fff;text-align:center}
-.card{display:inline-block;width:85px;height:120px;border-radius:8px;margin:4px;padding:6px;border:2px solid #ccc;cursor:pointer}
-.red{background:#8a1b1b}.blue{background:#0d2a86}.ump{background:#555}.wild{background:#333}
-.card-title{font-size:14px;font-weight:700}.card-val{font-size:20px;margin-top:6px}
-.back{background:#444;border-color:#999;display:flex;justify-content:center;align-items:center}
-.back span{font-weight:700;color:#eee;font-size:13px}
-.deck-area{display:flex;flex-direction:column;align-items:center;margin:8px 0}
-.board{display:flex;flex-direction:column;height:100vh}
-.zone{flex:1;margin:4px;border:2px solid #555;border-radius:10px;padding:6px;background:#333}
-.highlight{border-color:#ffcc00;box-shadow:0 0 8px #ffcc00}
-.chain{display:flex;justify-content:center;flex-wrap:wrap;margin-top:4px}
-.hand-bar{background:#111;border-top:2px solid #444;padding:6px}
-.hand{display:flex;justify-content:center;flex-wrap:wrap}
-.btn{padding:12px 24px;margin:8px auto;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:#ffcc00;color:#000}
-.start{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#f9f0ee;color:#0d2a86}
-.start h1{color:#8a1b1b}.splash-card{width:240px;max-width:80%;box-shadow:0 0 10px rgba(0,0,0,.25);border-radius:6px;margin-bottom:20px}
-.start button{background:#8a1b1b;color:#f9f0ee;padding:14px 32px;font-size:20px;font-weight:700;border:none;border-radius:10px;cursor:pointer}
-.start button:hover{opacity:.85}
-.log-box{background:#111;color:#ccc;padding:8px;margin:4px auto;max-width:90%;height:80px;overflow:auto;font-size:13px;text-align:left;border:1px solid #444;border-radius:6px}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Momentum – AFL Card Game</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <style>
+    body{margin:0;font-family:sans-serif;background:#222;color:#fff;text-align:center}
+    .card{display:inline-block;width:85px;height:120px;border-radius:8px;margin:4px;padding:6px;border:2px solid #ccc;cursor:pointer}
+    .red{background:#8a1b1b}.blue{background:#0d2a86}.ump{background:#555}.wild{background:#333}
+    .card-title{font-size:14px;font-weight:700}.card-val{font-size:20px;margin-top:6px}
+    .back{background:#444;border-color:#999;display:flex;justify-content:center;align-items:center}
+    .back span{font-weight:700;color:#eee;font-size:13px}
+    .deck-area{display:flex;flex-direction:column;align-items:center;margin:8px 0}
+    .board{display:flex;flex-direction:column;height:100vh}
+    .zone{flex:1;margin:4px;border:2px solid #555;border-radius:10px;padding:6px;background:#333}
+    .highlight{border-color:#ffcc00;box-shadow:0 0 8px #ffcc00}
+    .chain{display:flex;justify-content:center;flex-wrap:wrap;margin-top:4px}
+    .hand-bar{background:#111;border-top:2px solid #444;padding:6px}
+    .hand{display:flex;justify-content:center;flex-wrap:wrap}
+    .btn{padding:12px 24px;margin:8px auto;font-weight:700;border:none;border-radius:8px;cursor:pointer;background:#ffcc00;color:#000}
+    .start{height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;background:#f9f0ee;color:#0d2a86}
+    .start h1{color:#8a1b1b}.splash-card{width:240px;max-width:80%;box-shadow:0 0 10px rgba(0,0,0,.25);border-radius:6px;margin-bottom:20px}
+    .start button{background:#8a1b1b;color:#f9f0ee;padding:14px 32px;font-size:20px;font-weight:700;border:none;border-radius:10px;cursor:pointer}
+    .start button:hover{opacity:.85}
+    .log-box{background:#111;color:#ccc;padding:8px;margin:4px auto;max-width:90%;height:80px;overflow:auto;font-size:13px;text-align:left;border:1px solid #444;border-radius:6px}
+  </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
-const {useState,useEffect}=React;
-const shuffle=a=>[...a].sort(()=>Math.random()-0.5);
-const last=a=>a.length?a[a.length-1]:null;
-const COLORS=["red","blue"];
-const MOM={Handball:8,Bounce:8,Kick:8,"Kick & Mark":5,Mark:5,Torp:4,Banana:4};
-const DEF={Tackle:4,Smother:4,"Tackle HTB":2,"Intercept Mark":4};
-const UMP=["Not 15"];
-const VAL={Handball:1,Bounce:1,Kick:1,"Kick & Mark":1,Mark:0,Torp:3,Banana:3};
-function buildDeck(){
-  let d=[];
-  COLORS.forEach(col=>{
-    Object.entries(MOM).forEach(([n,c])=>{for(let i=0;i<c;i++)d.push({name:n,color:col,value:VAL[n],type:"mom"});});
-    Object.entries(DEF).forEach(([n,c])=>{for(let i=0;i<c;i++)d.push({name:n,color:col,type:"def"});});
-  });
-  UMP.forEach(n=>{for(let i=0;i<2;i++)d.push({name:n,color:"ump",type:"ump"});});
-  d.push({name:"Siren",color:"wild",type:"wild"});
-  return shuffle(d);
-}
-const buildScore=()=>shuffle([..."GGGGGGG",..."BBBBBBBBBBBBB"]);
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const shuffle = a => [...a].sort(() => Math.random() - 0.5);
+    const last = a => a.length ? a[a.length - 1] : null;
 
-const Card=({c,onClick,back})=>{
-  if(back) return <div className="card back"><span>Deck</span></div>;
-  return (
-    <div className={"card "+c.color} onClick={onClick} title={c.name}>
-      <div className="card-title">{c.name}</div>
-      {c.value!=null && <div className="card-val">+{c.value}</div>}
-    </div>
-  );
-};
+    const COLORS = ["red", "blue"];
+    const MOM = { Handball:8, Bounce:8, Kick:8, "Kick & Mark":5, Mark:5, Torp:4, Banana:4 };
+    const DEF = { Tackle:4, Smother:4, "Tackle HTB":2, "Intercept Mark":4 };
+    const UMP = ["Not 15"];
+    const VAL = { Handball:1, Bounce:1, Kick:1, "Kick & Mark":1, Mark:0, Torp:3, Banana:3 };
 
-function Zone({p,current}){
-  const mom=p.chain.reduce((s,c)=>s+(c.value||0),0);
-  return (
-    <div className={"zone "+(current?"highlight":"")}>
-      <strong>{p.name}</strong><br/>Score {p.score} • Mom {mom}
-      <div className="chain">{p.chain.map((c,i)=><Card key={i} c={c}/>)}</div>
-    </div>
-  );
-}
-
-function Board({onWin}){
-  const [deck,setDeck]=useState(buildDeck());
-  const [scores,setScores]=useState(buildScore());
-  const [players,setPlayers]=useState(Array.from({length:4},(_,i)=>({id:i,name:i?`Bot ${i}`:"You",hand:[],chain:[],score:0,total:0})));
-  const [turn,setTurn]=useState(0);
-  const [actions,setActions]=useState(3);
-  const [colour,setColour]=useState(null);
-  const [log,setLog]=useState([]);
-  const [siren,setSiren]=useState(false);
-  const [finalTurns,setFinalTurns]=useState(0);
-  const [quarter,setQuarter]=useState(1);
-
-  const draw=(pl,n=1)=>{ let d=[...deck]; for(let i=0;i<n&&d.length;i++){pl.hand.push(d.shift());} setDeck(d); };
-
-  useEffect(()=>{if(players[0].hand.length===0){const arr=[...players];arr.forEach(pl=>draw(pl,7));setPlayers(arr);}},[]);
-
-  useEffect(()=>{setPlayers(prev=>{const arr=[...prev];draw(arr[turn],3);return arr;});},[turn]);
-
-  const protectedChain=ch=> last(ch)&&last(ch).name==="Mark";
-  const addLog=msg=>setLog(prev=>([msg,...prev.slice(0,9)]));
-
-  function scoreCheck(pl){
-    const mom=pl.chain.reduce((s,c)=>s+(c.value||0),0);
-    const lo=last(pl.chain); const ln=lo?lo.name:null;
-    if(mom>=10 && ["Kick","Torp","Banana"].includes(ln)){
-      const sc=scores[0]; setScores(scores.slice(1));
-      pl.score+=sc==="G"?6:1;
-      pl.chain=sc==="G"?[]:pl.chain.slice(-2);
-      addLog(`${pl.name} scores a ${sc === "G" ? "GOAL" : "behind"}`);
-      if(pl.score+pl.total>=30) onWin(pl.name);
+    function buildDeck(){
+      let d = [];
+      COLORS.forEach(col => {
+        Object.entries(MOM).forEach(([n, c]) => { for(let i=0;i<c;i++) d.push({name:n, color:col, value:VAL[n], type:"mom"}); });
+        Object.entries(DEF).forEach(([n, c]) => { for(let i=0;i<c;i++) d.push({name:n, color:col, type:"def"}); });
+      });
+      UMP.forEach(n => { for(let i=0;i<2;i++) d.push({name:n, color:"ump", type:"ump"}); });
+      d.push({name:"Siren", color:"wild", type:"wild"});
+      return shuffle(d);
     }
-  }
 
-  function applyCard(state,src,dst,idx){
-    const card=state[src].hand[idx];
-    const ch=state[dst].chain;
-    if(card.name==="Not 15"){
-      const tgt=parseInt(prompt("Remove Mark from which player? (0-3)"));
-      if(isNaN(tgt)||tgt<0||tgt>3){alert("Cancelled");return false;}
-      const ch=state[tgt].chain, top=last(ch);
-      if(top&&(top.name==="Mark"||top.name==="Kick & Mark")){ch.pop();state[src].hand.splice(idx,1);addLog(`${state[src].name} removed Mark from ${state[tgt].name}`);return true;}
-      alert("No Mark there.");return false;
+    const buildScore = () => shuffle([...("G".repeat(7)), ...("B".repeat(13))]);
+
+    const Card = ({c, onClick, back}) => {
+      if (back) return <div className="card back"><span>Deck</span></div>;
+      return <div className={"card "+c.color} onClick={onClick}><div className="card-title">{c.name}</div>{c.value != null && <div className="card-val">+{c.value}</div>}</div>;
+    };
+
+    function Zone({p, current}){
+      const mom = p.chain.reduce((s,c)=>s+(c.value||0),0);
+      return (
+        <div className={"zone "+(current?"highlight":"")}>
+          <strong>{p.name}</strong><br/>Score {p.score} • Mom {mom}
+          <div className="chain">{p.chain.map((c,i)=><Card key={i} c={c}/>)}</div>
+        </div>
+      );
     }
-    if(card.name==="Siren"){
-      state[src].hand.splice(idx,1);
-      setSiren(true);
-      setFinalTurns(4);
-      addLog("Siren played! Final turns begin.");
-      return true;
+
+    function Board({onWin}){
+      const [deck,setDeck]=useState(buildDeck());
+      const [scores,setScores]=useState(buildScore());
+      const [players,setPlayers]=useState(Array.from({length:4},(_,i)=>({id:i,name:i?`Bot ${i}`:"You",hand:[],chain:[],score:0,total:0})));
+      const [turn,setTurn]=useState(0);
+      const [actions,setActions]=useState(3);
+      const [colour,setColour]=useState(null);
+      const [log,setLog]=useState([]);
+      const [siren,setSiren]=useState(false);
+      const [finalTurns,setFinalTurns]=useState(0);
+      const [quarter,setQuarter]=useState(1);
+
+      const draw = (pl,n=1)=>{ let d=[...deck]; for(let i=0;i<n&&d.length;i++){pl.hand.push(d.shift());} setDeck(d); };
+      const protectedChain = ch => last(ch)&&last(ch).name==="Mark";
+      const addLog = msg => setLog(prev=>([msg,...prev.slice(0,9)]));
+
+      function scoreCheck(pl){
+        const mom=pl.chain.reduce((s,c)=>s+(c.value||0),0);
+        const lo=last(pl.chain); const ln=lo?lo.name:null;
+        if(mom>=10 && ["Kick","Torp","Banana"].includes(ln)){
+          const sc=scores[0]; setScores(scores.slice(1));
+          pl.score+=sc==="G"?6:1;
+          pl.chain=sc==="G"?[]:pl.chain.slice(-2);
+          addLog(`${pl.name} scores a ${sc === "G" ? "GOAL" : "behind"}`);
+          if(pl.score+pl.total>=30) onWin(pl.name);
+        }
+      }
+
+      function applyCard(state,src,dst,idx){
+        const card = state[src].hand[idx];
+        const ch = state[dst].chain;
+        if(card.name==="Not 15"){
+          const tgt=parseInt(prompt("Remove Mark from which player? (0-3)"));
+          if(isNaN(tgt)||tgt<0||tgt>3){alert("Cancelled");return false;}
+          const ch=state[tgt].chain, top=last(ch);
+          if(top&&(top.name==="Mark"||top.name==="Kick & Mark")){ch.pop();state[src].hand.splice(idx,1);addLog(`${state[src].name} removed Mark from ${state[tgt].name}`);return true;}
+          alert("No Mark there."); return false;
+        }
+        if(card.name==="Siren"){ state[src].hand.splice(idx,1); setSiren(true); setFinalTurns(4); addLog("Siren played! Final turns begin."); return true; }
+        if(protectedChain(ch)) return false;
+        const top = last(ch); let ok = false;
+        if(card.name==="Tackle" && top && ["Handball","Bounce"].includes(top.name)){ ch.pop(); ok=true; }
+        else if(card.name==="Smother" && top && ["Handball","Kick"].includes(top.name)){ ch.pop(); ok=true; }
+        else if(card.name==="Tackle HTB" && ch.length){ state[dst].chain=[]; ok=true; }
+        else if(card.name==="Intercept Mark" && top && top.name==="Kick"){ state[src].chain.push(top); ch.pop(); ok=true; }
+        if(ok){ state[src].hand.splice(idx,1); addLog(`${state[src].name} played ${card.name} on ${state[dst].name}`); }
+        return ok;
+      }
+
+      const playCard = (i)=>{
+        if(turn!==0) return;
+        const arr = [...players], card = arr[0].hand[i], top = last(arr[0].chain);
+        if(card.name==="Mark" && (!top||top.name!=="Kick")){alert("Mark must follow Kick");return;}
+        if(card.type==="mom"){
+          if(colour && card.color!==colour) return;
+          arr[0].hand.splice(i,1); arr[0].chain.push(card);
+          setColour(colour||card.color); setActions(a=>a-1); scoreCheck(arr[0]); setPlayers(arr); addLog(`You played ${card.name}`);
+        }else{
+          const tgt = parseInt(prompt("Target player (0–3):"));
+          if(isNaN(tgt)||tgt<0||tgt>3){alert("Cancelled");return;}
+          const ok = applyCard(arr,0,tgt,i);
+          if(ok){ setPlayers(arr); if(card.type!=="ump") setActions(a=>a-1); }
+        }
+      };
+
+      // ✅ SMARTER BOT LOGIC
+      useEffect(()=>{
+        if(turn===0) return;
+        const arr = [...players];
+        const ai = arr[turn];
+        const human = arr[0];
+        const ht = last(human.chain);
+
+        const dIdx = ai.hand.findIndex(c => c.type === "def" && !protectedChain(human.chain) &&
+          ((c.name === "Tackle" && ht && ["Handball", "Bounce"].includes(ht.name)) ||
+          (c.name === "Smother" && ht && ["Handball", "Kick"].includes(ht.name)) ||
+          (c.name === "Tackle HTB" && human.chain.length) ||
+          (c.name === "Intercept Mark" && ht && ht.name === "Kick")));
+        if(dIdx !== -1){
+          applyCard(arr, turn, 0, dIdx);
+          setPlayers(arr);
+          setTimeout(endTurn, 500);
+          return;
+        }
+
+        const currentColor = ai.chain.length > 0 ? ai.chain[0].color : null;
+        const validMom = ai.hand
+          .filter(c => c.type === "mom" && (!currentColor || c.color === currentColor))
+          .sort((a, b) => (b.value || 0) - (a.value || 0));
+
+        if(validMom.length > 0){
+          const best = validMom[0];
+          const idx = ai.hand.findIndex(c => c === best);
+          ai.chain.push(ai.hand.splice(idx, 1)[0]);
+          setColour(currentColor || best.color);
+          addLog(`${ai.name} played ${best.name}`);
+          scoreCheck(ai);
+          setPlayers(arr);
+          setTimeout(endTurn, 500);
+          return;
+        }
+
+        setPlayers(arr);
+        setTimeout(endTurn, 500);
+      }, [turn]);
+
+      const endTurn = ()=>{
+        setPlayers(prev=>{const a=[...prev];if(a[turn].hand.length>7)a[turn].hand=a[turn].hand.slice(0,7);return a;});
+        if(siren){
+          if(finalTurns<=1){
+            addLog(`Quarter ${quarter} ends.`);
+            const updated = players.map(p => ({...p, total: p.total + p.score, score: 0, hand: [], chain: []}));
+            setPlayers(updated);
+            setDeck(buildDeck()); setScores(buildScore()); setTurn(0); setActions(3); setColour(null);
+            setSiren(false); setFinalTurns(0); setQuarter(q=>q+1);
+            return;
+          } else setFinalTurns(f=>f-1);
+        }
+        setTurn(t=>(t+1)%4); setActions(3); setColour(null);
+      };
+
+      return (
+        <div className="board">
+          <div className="deck-area"><Card back/><div style={{fontSize:14,marginTop:2}}>Deck&nbsp;{deck.length}</div></div>
+          <h3>Turn: {players[turn].name} — Quarter {quarter}</h3>
+          <div style={{display:"flex",justifyContent:"space-around"}}>{players.slice(1).map(p=><Zone key={p.id} p={p} current={turn===p.id}/>)}</div>
+          <Zone p={players[0]} current={turn===0}/>
+          <div className="hand-bar"><div className="hand">{players[0].hand.map((c,i)=><Card key={i} c={c} onClick={()=>playCard(i)}/>)}</div></div>
+          {turn===0 && <button className="btn" onClick={endTurn}>End Turn ({actions})</button>}
+          <div className="log-box">{log.map((l,i)=><div key={i}>{l}</div>)}</div>
+        </div>
+      );
     }
-    if(protectedChain(ch)) return false;
-    const top=last(ch); let ok=false;
-    if(card.name==="Tackle" && top && ["Handball","Bounce"].includes(top.name)){ch.pop();ok=true;}
-    else if(card.name==="Smother" && top && ["Handball","Kick"].includes(top.name)){ch.pop();ok=true;}
-    else if(card.name==="Tackle HTB" && ch.length){state[dst].chain=[];ok=true;}
-    else if(card.name==="Intercept Mark" && top && top.name==="Kick"){state[src].chain.push(top);ch.pop();ok=true;}
-    if(ok){state[src].hand.splice(idx,1);addLog(`${state[src].name} played ${card.name} on ${state[dst].name}`);}
-    return ok;
-  }
 
-  const playCard=(i)=>{
-    if(turn!==0) return;
-    const arr=[...players], card=arr[0].hand[i], top=last(arr[0].chain);
-    if(card.name==="Mark" && (!top||top.name!=="Kick")){alert("Mark must follow Kick");return;}
-    if(card.type==="mom"){
-      if(colour && card.color!==colour) return;
-      arr[0].hand.splice(i,1); arr[0].chain.push(card);
-      setColour(colour||card.color); setActions(a=>a-1); scoreCheck(arr[0]); setPlayers(arr); addLog(`You played ${card.name}`);
-    }else{
-      const tgt=parseInt(prompt("Target player (0-3):"));
-      if(isNaN(tgt)||tgt<0||tgt>3){alert("Cancelled");return;}
-      const ok=applyCard(arr,0,tgt,i);
-      if(ok){ setPlayers(arr); if(card.type!=="ump") setActions(a=>a-1); }
+    function App(){
+      const [play,setPlay]=useState(false);
+      const [winner,setWinner]=useState("-");
+      return play
+        ? <Board onWin={n=>{setWinner(n);setPlay(false);}}/>
+        : <div className="start">
+            <img src="splash_card.png" alt="splash" className="splash-card"/>
+            <h1>MOMENTUM</h1><p>The Aussie Rules Card Game</p>
+            {winner!=="-" && <h2 style={{marginTop:8}}>{winner} wins!</h2>}
+            <button onClick={()=>setPlay(true)}>Play Game</button>
+          </div>;
     }
-  };
 
-  useEffect(()=>{if(turn===0) return;
-    const arr=[...players], ai=arr[turn], human=arr[0];
-    const ht=last(human.chain);
-    const dIdx=ai.hand.findIndex(c=>c.type==="def" && !protectedChain(human.chain) &&
-      ((c.name==="Tackle" && ht && ["Handball","Bounce"].includes(ht.name))||
-       (c.name==="Smother" && ht && ["Handball","Kick"].includes(ht.name))||
-       (c.name==="Tackle HTB" && human.chain.length)||
-       (c.name==="Intercept Mark" && ht && ht.name==="Kick")));
-    if(dIdx!==-1){applyCard(arr,turn,0,dIdx);setPlayers(arr);setTimeout(endTurn,500);return;}
-    const mIdx=ai.hand.findIndex(c=>c.type==="mom");
-    if(mIdx!==-1){ai.chain.push(ai.hand.splice(mIdx,1)[0]);addLog(`${ai.name} played ${ai.chain.at(-1).name}`);scoreCheck(ai);}
-    setPlayers(arr); setTimeout(endTurn,500);
-  },[turn]);
-
-  const endTurn=()=>{
-    setPlayers(prev=>{const a=[...prev];if(a[turn].hand.length>7)a[turn].hand=a[turn].hand.slice(0,7);return a;});
-    if(siren){
-      if(finalTurns<=1){
-        addLog(`Quarter ${quarter} ends.`);
-        const updated = players.map(p => ({...p, total: p.total + p.score, score: 0, hand: [], chain: []}));
-        setPlayers(updated);
-        setDeck(buildDeck()); setScores(buildScore()); setTurn(0); setActions(3); setColour(null);
-        setSiren(false); setFinalTurns(0); setQuarter(q=>q+1);
-        return;
-      } else setFinalTurns(f=>f-1);
-    }
-    setTurn(t=>(t+1)%4); setActions(3); setColour(null);
-  };
-
-  return(
-    <div className="board">
-      <div className="deck-area"><Card back/><div style={{fontSize:14,marginTop:2}}>Deck&nbsp;{deck.length}</div></div>
-      <h3>Turn: {players[turn].name} — Quarter {quarter}</h3>
-      <div style={{display:"flex",justifyContent:"space-around"}}>{players.slice(1).map(p=><Zone key={p.id} p={p} current={turn===p.id}/>)}</div>
-      <Zone p={players[0]} current={turn===0}/>
-      <div className="hand-bar"><div className="hand">{players[0].hand.map((c,i)=><Card key={i} c={c} onClick={()=>playCard(i)}/>)}
-      </div></div>
-      {turn===0 && <button className="btn" onClick={endTurn}>End Turn ({actions})</button>}
-      <div className="log-box">{log.map((l,i)=><div key={i}>{l}</div>)}</div>
-    </div>
-  );
-}
-
-function App(){
-  const [play,setPlay]=useState(false);
-  const [winner,setWinner]=useState("-");
-  return play
-    ? <Board onWin={n=>{setWinner(n);setPlay(false);}}/>
-    : <div className="start">
-        <img src="splash_card.png" alt="splash" className="splash-card"/>
-        <h1>MOMENTUM</h1><p>The Aussie Rules Card Game</p>
-        {winner!=="-" && <h2 style={{marginTop:8}}>{winner} wins!</h2>}
-        <button onClick={()=>setPlay(true)}>Play Game</button>
-      </div>;
-}
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script>
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+  </script>
 </body>
 </html>
+<!-- END -->
