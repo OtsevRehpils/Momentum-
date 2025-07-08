@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Momentum – AFL Card Game</title>
 
-  <!-- Load React and Babel so we can use JSX directly in the browser -->
+  <!-- Load React and Babel -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 
-  <!-- Styles for cards, layout, and game screen -->
+  <!-- Smaller card layout and board styling -->
   <style>
     body {
       margin: 0;
@@ -19,8 +19,6 @@
       color: #fff;
       text-align: center;
     }
-
-    /* Smaller card style */
     .card {
       display: inline-block;
       width: 60px;
@@ -32,22 +30,12 @@
       cursor: pointer;
       font-size: 11px;
     }
-
     .red { background: #8a1b1b; }
     .blue { background: #0d2a86; }
     .ump { background: #555; }
     .wild { background: #333; }
-
-    .card-title {
-      font-size: 11px;
-      font-weight: 700;
-    }
-
-    .card-val {
-      font-size: 16px;
-      margin-top: 4px;
-    }
-
+    .card-title { font-size: 11px; font-weight: 700; }
+    .card-val { font-size: 16px; margin-top: 4px; }
     .back {
       background: #444;
       border-color: #999;
@@ -55,26 +43,22 @@
       justify-content: center;
       align-items: center;
     }
-
     .back span {
       font-weight: 700;
       color: #eee;
       font-size: 13px;
     }
-
     .deck-area {
       display: flex;
       flex-direction: column;
       align-items: center;
       margin: 8px 0;
     }
-
     .board {
       display: flex;
       flex-direction: column;
       height: 100vh;
     }
-
     .zone {
       flex: 1;
       margin: 4px;
@@ -83,31 +67,26 @@
       padding: 6px;
       background: #333;
     }
-
     .highlight {
       border-color: #ffcc00;
       box-shadow: 0 0 8px #ffcc00;
     }
-
     .chain {
       display: flex;
       justify-content: center;
       flex-wrap: wrap;
       margin-top: 2px;
     }
-
     .hand-bar {
       background: #111;
       border-top: 2px solid #444;
       padding: 6px;
     }
-
     .hand {
       display: flex;
       justify-content: center;
       flex-wrap: wrap;
     }
-
     .btn {
       padding: 12px 24px;
       margin: 8px auto;
@@ -118,7 +97,6 @@
       background: #ffcc00;
       color: #000;
     }
-
     .start {
       height: 100vh;
       display: flex;
@@ -128,11 +106,7 @@
       background: #f9f0ee;
       color: #0d2a86;
     }
-
-    .start h1 {
-      color: #8a1b1b;
-    }
-
+    .start h1 { color: #8a1b1b; }
     .splash-card {
       width: 240px;
       max-width: 80%;
@@ -140,7 +114,6 @@
       border-radius: 6px;
       margin-bottom: 20px;
     }
-
     .start button {
       background: #8a1b1b;
       color: #f9f0ee;
@@ -151,41 +124,22 @@
       border-radius: 10px;
       cursor: pointer;
     }
-
-    .start button:hover {
-      opacity: 0.85;
-    }
+    .start button:hover { opacity: 0.85; }
   </style>
 </head>
 <body>
   <div id="root"></div>
-
   <script type="text/babel">
-    // Import React state and effect hooks
     const { useState, useEffect } = React;
-
-    // Shuffle an array (used for deck and score)
     const shuffle = a => [...a].sort(() => Math.random() - 0.5);
-
-    // Get the last card in a chain
     const last = a => a.length ? a[a.length - 1] : null;
 
-    // Define card colors
     const COLORS = ["red", "blue"];
-
-    // Define Momentum cards with counts
     const MOM = { Handball:8, Bounce:8, Kick:8, "Kick & Mark":5, Mark:5, Torp:4, Banana:4 };
-
-    // Define Defense cards with counts
     const DEF = { Tackle:4, Smother:4, "Tackle HTB":2, "Intercept Mark":4 };
-
-    // Umpire card names
     const UMP = ["Not 15"];
-
-    // Value assigned to each momentum card
     const VAL = { Handball:1, Bounce:1, Kick:1, "Kick & Mark":1, Mark:0, Torp:3, Banana:3 };
 
-    // Build the full shuffled deck
     function buildDeck() {
       let d = [];
       COLORS.forEach(col => {
@@ -201,10 +155,8 @@
       return shuffle(d);
     }
 
-    // Build score pile (G = goal, B = behind)
     const buildScore = () => shuffle([...("G".repeat(7)), ...("B".repeat(13))]);
 
-    // Card display component
     const Card = ({ c, onClick, back }) => {
       if (back) return <div className="card back"><span>Deck</span></div>;
       return (
@@ -215,7 +167,6 @@
       );
     };
 
-    // Player zone display
     const Zone = ({ p, current }) => {
       const mom = p.chain.reduce((s, c) => s + (c.value || 0), 0);
       return (
@@ -226,7 +177,6 @@
       );
     };
 
-    // Main game board
     function Board({ onWin }) {
       const [deck, setDeck] = useState(buildDeck());
       const [scores, setScores] = useState(buildScore());
@@ -235,8 +185,12 @@
       })));
       const [turn, setTurn] = useState(0);
       const [actions, setActions] = useState(3);
+      const [log, setLog] = useState([]);
 
-      // Draw cards for a player
+      function addLog(msg) {
+        setLog(prev => [...prev.slice(-9), msg]);
+      }
+
       const draw = (pl, n = 1) => {
         let d = [...deck];
         for (let i = 0; i < n && d.length; i++) pl.hand.push(d.shift());
@@ -245,7 +199,6 @@
 
       const protectedChain = ch => last(ch) && last(ch).name === "Mark";
 
-      // First hand draw
       useEffect(() => {
         if (players[0].hand.length === 0) {
           const arr = [...players];
@@ -254,14 +207,12 @@
         }
       }, []);
 
-      // Draw 3 cards at start of turn
       useEffect(() => {
         const arr = [...players];
         draw(arr[turn], 3);
         setPlayers(arr);
       }, [turn]);
 
-      // Check if a player scores
       function scoreCheck(pl) {
         const mom = pl.chain.reduce((s, c) => s + (c.value || 0), 0);
         const lo = last(pl.chain);
@@ -269,28 +220,32 @@
         if (mom >= 10 && ["Kick", "Torp", "Banana"].includes(ln)) {
           const sc = scores[0];
           setScores(scores.slice(1));
+          addLog(`${pl.name} scored a ${sc === "G" ? "GOAL" : "BEHIND"}!`);
           pl.score += sc === "G" ? 6 : 1;
           pl.chain = sc === "G" ? [] : pl.chain.slice(-2);
           if (pl.score >= 30) onWin(pl.name);
         }
       }
 
-      // Use a defense card
       function applyCard(state, src, dst, idx) {
         const card = state[src].hand[idx];
         const ch = state[dst].chain;
         const top = last(ch);
         if (!top || card.color !== top.color) return false;
         let ok = false;
-        if (card.name === "Tackle" && ["Handball", "Bounce"].includes(top.name)) { ch.pop(); ok = true; }
-        else if (card.name === "Smother" && ["Handball", "Kick"].includes(top.name)) { ch.pop(); ok = true; }
-        else if (card.name === "Tackle HTB" && ch.length) { state[dst].chain = []; ok = true; }
-        else if (card.name === "Intercept Mark" && top.name === "Kick") { state[src].chain.push(top); ch.pop(); ok = true; }
+        if (card.name === "Tackle" && ["Handball", "Bounce"].includes(top.name)) {
+          ch.pop(); ok = true; addLog(`${state[src].name} tackled ${state[dst].name}`);
+        } else if (card.name === "Smother" && ["Handball", "Kick"].includes(top.name)) {
+          ch.pop(); ok = true; addLog(`${state[src].name} smothered ${state[dst].name}`);
+        } else if (card.name === "Tackle HTB" && ch.length) {
+          state[dst].chain = []; ok = true; addLog(`${state[src].name} tackled HTB on ${state[dst].name}`);
+        } else if (card.name === "Intercept Mark" && top.name === "Kick") {
+          state[src].chain.push(top); ch.pop(); ok = true; addLog(`${state[src].name} intercepted ${state[dst].name}`);
+        }
         if (ok) state[src].hand.splice(idx, 1);
         return ok;
       }
 
-      // Human plays a card
       const playCard = (i) => {
         if (turn !== 0) return;
         const arr = [...players];
@@ -300,97 +255,4 @@
           alert("Mark must follow Kick"); return;
         }
         if (card.type === "mom") {
-          arr[0].hand.splice(i, 1);
-          arr[0].chain.push(card);
-          setActions(a => a - 1);
-          scoreCheck(arr[0]);
-          setPlayers(arr);
-        } else {
-          const tgt = parseInt(prompt("Target player (0–3):"));
-          if (isNaN(tgt) || tgt < 0 || tgt > 3) return;
-          const targetTop = last(players[tgt].chain);
-          if (targetTop && card.color !== targetTop.color) {
-            alert("Defense card must match color of opponent's last card.");
-            return;
-          }
-          const ok = applyCard(arr, 0, tgt, i);
-          if (ok) {
-            setPlayers(arr);
-            if (card.type !== "ump") setActions(a => a - 1);
-          }
-        }
-      };
-
-      // AI bot turn logic
-      useEffect(() => {
-        if (turn === 0) return;
-        const arr = [...players];
-        const ai = arr[turn];
-        const human = arr[0];
-        const ht = last(human.chain);
-        const dIdx = ai.hand.findIndex(c => c.type === "def" && !protectedChain(human.chain) && ht &&
-          c.color === ht.color && (
-            (c.name === "Tackle" && ["Handball", "Bounce"].includes(ht.name)) ||
-            (c.name === "Smother" && ["Handball", "Kick"].includes(ht.name)) ||
-            (c.name === "Tackle HTB" && human.chain.length) ||
-            (c.name === "Intercept Mark" && ht.name === "Kick")
-          )
-        );
-        if (dIdx !== -1) {
-          applyCard(arr, turn, 0, dIdx);
-          setPlayers(arr);
-          setTimeout(() => setTurn((turn + 1) % 4), 500);
-          return;
-        }
-        const validMom = ai.hand.filter(c => c.type === "mom").sort((a, b) => (b.value || 0) - (a.value || 0));
-        if (validMom.length > 0) {
-          const best = validMom[0];
-          const idx = ai.hand.findIndex(c => c === best);
-          ai.chain.push(ai.hand.splice(idx, 1)[0]);
-          scoreCheck(ai);
-        }
-        setPlayers(arr);
-        setTimeout(() => setTurn((turn + 1) % 4), 500);
-      }, [turn]);
-
-      return (
-        <div className="board">
-          <div className="deck-area">
-            <Card back />
-            <div style={{ fontSize: 14, marginTop: 2 }}>Deck {deck.length}</div>
-          </div>
-          <h3>Turn: {players[turn].name}</h3>
-          <div style={{ display: "flex", justifyContent: "space-around" }}>
-            {players.slice(1).map(p => <Zone key={p.id} p={p} current={turn === p.id} />)}
-          </div>
-          <Zone p={players[0]} current={turn === 0} />
-          <div className="hand-bar">
-            <div className="hand">
-              {players[0].hand.map((c, i) => <Card key={i} c={c} onClick={() => playCard(i)} />)}
-            </div>
-          </div>
-          {turn === 0 && <button className="btn" onClick={() => setTurn((turn + 1) % 4)}>End Turn ({actions})</button>}
-        </div>
-      );
-    }
-
-    // Splash screen and game start
-    function App() {
-      const [play, setPlay] = useState(false);
-      const [winner, setWinner] = useState("-");
-      return play
-        ? <Board onWin={name => { setWinner(name); setPlay(false); }} />
-        : <div className="start">
-            <img src="splash_card.png" alt="splash" className="splash-card" />
-            <h1>MOMENTUM</h1>
-            <p>The Aussie Rules Card Game</p>
-            {winner !== "-" && <h2 style={{ marginTop: 8 }}>{winner} wins!</h2>}
-            <button onClick={() => setPlay(true)}>Play Game</button>
-          </div>;
-    }
-
-    // Start the game by rendering <App />
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-  </script>
-</body>
-</html>
+          arr[0].h
